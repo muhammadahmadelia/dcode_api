@@ -1,0 +1,8 @@
+api.example.com/manufacturers/ GET
+api.example.com/manufacturers/categories GET
+api.example.com/manufacturer/{id}/ GET, POST, PUT, UPDATE and DELETE
+api.example.com/products/GET
+api.example.com/products/categories/ GET
+parameters : filter (category, country, .... )
+api.example.com/product/{id}/ GET, POST, PUT, UPDATE and DELETE
+parameters : include (manufucturer, category)

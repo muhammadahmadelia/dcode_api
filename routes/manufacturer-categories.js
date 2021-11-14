@@ -2,9 +2,9 @@ import express from 'express';
 import { connection } from '../database/connection.js';
 
 
-const productsRouter = express.Router();
+const manufacturerCategoriesRouter = express.Router();
 
-productsRouter.get('/', async (req, res) => {
+manufacturerCategoriesRouter.get('/', async (req, res) => {
     const query = 'SELECT * from products';
     connection.query(query, async (err, result) => {
         if (!err) {
@@ -16,7 +16,7 @@ productsRouter.get('/', async (req, res) => {
     });
 });
 
-productsRouter.post('/', async (req, res) => {
+manufacturerCategoriesRouter.post('/', async (req, res) => {
 
     const query = 'SELECT * from products';
     connection.query(query, async (err, result) => {
@@ -29,7 +29,7 @@ productsRouter.post('/', async (req, res) => {
     });
 });
 
-productsRouter.get('/:id', async (req, res) => {
+manufacturerCategoriesRouter.get('/:id', async (req, res) => {
     const id = req.params.id;
     const category = req.query.category;
     const country = req.query.country;
@@ -44,7 +44,7 @@ productsRouter.get('/:id', async (req, res) => {
     });
 });
 
-productsRouter.put('/:id', async (req, res) => {
+manufacturerCategoriesRouter.put('/:id', async (req, res) => {
     const id = req.params.id;
     const category = req.query.category;
     const country = req.query.country;
@@ -59,7 +59,7 @@ productsRouter.put('/:id', async (req, res) => {
     });
 });
 
-productsRouter.delete('/:id', async (req, res) => {
+manufacturerCategoriesRouter.delete('/:id', async (req, res) => {
     const id = req.params.id;
     const category = req.query.category;
     const country = req.query.country;
@@ -75,4 +75,4 @@ productsRouter.delete('/:id', async (req, res) => {
 });
 
 
-export { productsRouter };
+export { manufacturerCategoriesRouter };

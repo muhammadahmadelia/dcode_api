@@ -1,110 +1,107 @@
 import jwt from 'jsonwebtoken';
+import fs from 'fs';
 
-const requireAuth = function (req, res, next) {
-    const token = req.cookies.jwt;
+// Generate new tokens from https://travistidwell.com/jsencrypt/demo/
+// Private Key (must read as utf8)
+const accessTokenPrivateKey = fs.readFileSync('./middleware/access_token_private.key', 'utf8');
+// Public Key (must read as utf8)
+const accessTokenPublicKey = fs.readFileSync('./middleware/access_token_public.key', 'utf8');
+// Private Key (must read as utf8)
+const refreshTokenPrivateKey = fs.readFileSync('./middleware/refresh_token_private.key', 'utf8');
+// Public Key (must read as utf8)
+const refreshTokenPublicKey = fs.readFileSync('./middleware/refresh_token_public.key', 'utf8');
 
-    // check json web token exists & is verified
+// Signing value to issuer
+const iss = "www.dcode.com";
+// Signing value to audience
+const aud = "www.dcode.com";
+// Signing value to subject
+const sub = "www.dcode.com";
+
+
+// This method is creating access tokens
+// saving email of user in payload
+// setting this token life time as 10 days
+const signAccessToken = (email) => {
+    let payload = { email };
+    const signInOption = {
+        issuer: iss,
+        subject: sub,
+        audience: aud,
+        expiresIn: '10d',
+        algorithm: "RS256"
+    }
+    return jwt.sign(payload, accessTokenPrivateKey, signInOption);
+};
+
+// This function is verifying access token
+const verifyAccessToken = (req, res, next) => {
+    const token = req.cookies.access_token;
+    const verifyOption = {
+        issuer: iss,
+        subject: sub,
+        audience: aud,
+        maxAge: '10d',
+        algorithm: ['RS256']
+    }
     if (token) {
-        jwt.verify(token, 'dop coverage', function (err, decodedToken) {
+        jwt.verify(token, accessTokenPublicKey, verifyOption, (err, decodedToken) => {
             if (err) {
                 console.log(err);
-                res.redirect('/login');
-                //res.json({status:404, msg:"Unauthorized access", data:[]});
+                res.status(401).json({ 'msg': 'Not authorized to access this route' });
             } else {
-                //console.log(decodedToken);
+                req.decodedToken = decodedToken;
                 next();
             }
         });
     } else {
-        res.redirect('/login');
-        //res.json({status:404, msg:"Unauthorized access", data:[]});
+        res.status(401).json({ 'msg': 'Not authorized to access this route' });
     }
 }
 
-const maxAge = 5;
-const signAccessToken = function (userEmail) {
-    return new Promise(function (resolve, reject) {
-        const payload = {};
-        const secret = 'net ninja secret';
-        const options = {
-            expiresIn: maxAge,
-            issuer: 'com.ahmad.ali',
-            audience: userEmail.toString(),
-        };
-
-        jwt.sign(payload, secret, options, function (err, token) {
-            if (err) {
-                console.log(err.message);
-                reject({ status: 404, msg: "Unauthorized access", data: [] });
-            }
-            resolve(token);
-        });
-    });
+//This method is creating new refresh tokens like access token with life time of 30 days
+const signRefreshToken = (email) => {
+    let payload = { email };
+    const signInOption = {
+        issuer: iss,
+        subject: sub,
+        audience: aud,
+        expiresIn: '30d',
+        algorithm: "RS256"
+    }
+    return jwt.sign(payload, refreshTokenPrivateKey, signInOption);
 }
 
-const signRefreshToken = function (userEmail) {
-    return new Promise(function (resolve, reject) {
-        const payload = {};
-        const secret = 'dop coverage';
-        const options = {
-            expiresIn: '1y',
-            issuer: 'com.dop.coverage',
-            audience: userEmail.toString(),
-        };
-
-        jwt.sign(payload, secret, options, function (err, token) {
-            if (err) {
-                console.log(err.message);
-                reject({ status: 404, msg: "Unauthorized access", data: [] });
-            }
-            resolve(token);
-        });
-    });
-}
-
-const verifyRefreshTooken = function (refreshToken) {
-    return new Promise(function (resolve, reject) {
-        jwt.verify(refreshToken, 'dop coverage', function (err, payload) {
+// This method is verifying refresh tokens
+const verifyRefreshTooken = (req, res, next) => {
+    const refreshToken = req.cookies.refresh_token;
+    const verifyOption = {
+        issuer: iss,
+        subject: sub,
+        audience: aud,
+        maxAge: '30d',
+        algorithm: ['RS256']
+    }
+    if (refreshToken) {
+        jwt.verify(refreshToken, refreshTokenPublicKey, verifyOption, (err, decodedToken) => {
             if (err) {
                 console.log(err);
-                return reject({ status: 404, msg: "Unauthorized access", data: [] });
-            }
-            const userID = payload.aud;
-
-            resolve(userID);
-        })
-    });
-}
-
-const checkUser = function (req, res, next) {
-    const token = req.cookies.jwt;
-
-    if (token) {
-        jwt.verify(token, 'dop coverage', function (err, decodedToken) {
-            if (err) {
-                console.log(err);
-                res.locals.user = null;
+                res.status(401).json({ 'msg': 'Not authorized to access this route' });
             } else {
-                console.log(decodedToken);
-                var sql = "SELECT * FROM users WHERE id=" + decodedToken.id + "";
-                connection.query(sql, async function (err, result) {
-                    if (err) {
-                        res.locals.user = null;
-                        next();
-                    } else {
-                        let user = await result;
-                        //console.log(user);
-                        res.locals.user = user;
-                        res.locals.user;
-                        next();
-                    }
-                });
+                req.decodedToken = decodedToken;
+                next();
             }
         });
     } else {
-        res.locals.user = null;
-        next();
+        res.status(401).json({ 'msg': 'Not authorized to access this route' });
     }
 }
 
-module.exports = { requireAuth, checkUser, verifyRefreshTooken, signRefreshToken, signAccessToken };
+// This method will decoding refresh tokens and getting user email from it
+const getUserEmail = (token) => {
+    let decodedToken = jwt.decode(token, { complete: true })
+    return decodedToken.payload['email']
+}
+
+
+export { signAccessToken, verifyAccessToken, signRefreshToken, verifyRefreshTooken, getUserEmail };

@@ -42,6 +42,27 @@ app.get('/login', async (req, res) =>{
     });
 });
 
+app.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+    const query = `INSERT INTO users (email, password) VALUES ("${email}", "${password}")`;
+    connection.query(query, async (err, result) => {
+        if (!err) {
+            if (result.length > 0) {
+                const accessToken = signAccessToken(email);
+                res.cookie('access_token', accessToken, { httpOnly: true });
+                const refreshToken = signRefreshToken(email);
+                res.cookie('refresh_token', refreshToken, { httpOnly: true });
+                res.status(200).json({ msg: 'Successfully logged in' });
+            } else {
+                res.status(400).json({ msg: "Credentials are not correct" });
+            }
+        } else {
+            res.status(400).json({ msg: "Failed to signed in" });
+            console.log(err);
+        }
+    });
+});
+
 app.get('/token', verifyRefreshTooken, (req, res) => {
     const email = getUserEmail(req.cookies.access_token);
     const accessToken = signAccessToken(email);
